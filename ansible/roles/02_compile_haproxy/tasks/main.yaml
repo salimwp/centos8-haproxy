@@ -35,6 +35,7 @@
   unarchive:
     src: /usr/src/haproxy-2.0.15.tar.gz
     dest: /usr/src/haproxy-2.0.15
+    remote_src: yes
 
 - name: Compiling haproxy
   shell: |
