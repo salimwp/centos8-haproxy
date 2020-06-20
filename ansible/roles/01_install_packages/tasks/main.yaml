@@ -1,0 +1,20 @@
+---
+
+- name: Updating packages
+  dnf:
+    name: "*"
+    state: latest
+
+- name: Enabling epel-release
+  dnf:
+    name: epel-release
+    state: latest
+
+- name: Enabling powertools
+  shell: |
+    dnf config-manager --set-enabled PowerTools
+
+- name: Installing development tools
+  dnf:
+    name: "@Development Tools"
+    state: present

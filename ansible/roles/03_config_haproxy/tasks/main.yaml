@@ -1,0 +1,22 @@
+---
+
+- name: Transferring configs
+  copy:
+    src: haproxy.cfg
+    dest: /etc/haproxy/haproxy.cfg
+    owner: haproxy
+    group: haproxy
+
+- name: Transferring systemd file
+  copy:
+    src: haproxy.service
+    dest: /usr/lib/systemd/system/haproxy.service
+
+- name: Reload systemd and start haproxy
+  systemd:
+    name: haproxy
+    enabled: yes
+    state: reloaded
+    daemon_reload: yes
+   
+

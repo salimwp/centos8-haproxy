@@ -1,0 +1,80 @@
+---
+
+- name: Creating HAProxy users
+  user:
+    name: haproxy
+    system: yes
+    state: present
+
+- name: Installing dep packages
+  dnf:
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - openssl-devel
+    - pcre-devel
+    - luajit-devel
+    - lua-devel
+    - systemd-devel
+    - python3-libselinux
+    - python3-policycoreutils
+ 
+- name: Download haproxy 2.0.15 (LTS)
+  get_url:
+    url: http://www.haproxy.org/download/2.0/src/haproxy-2.0.15.tar.gz
+    dest: /usr/src/haproxy-2.0.15.tar.gz
+    checksum: md5:59f892991476f08e2d16ac460c502f61
+
+- name: Creating haproxy dir
+  file:
+    path: /usr/src/haproxy-2.0.15
+    state: directory
+
+    
+- name: Uncompressing haproxy
+  unarchive:
+    src: /usr/src/haproxy-2.0.15.tar.gz
+    dest: /usr/src/haproxy-2.0.15
+
+- name: Compiling haproxy
+  shell: |
+    if [ ! -f /usr/sbin/haproxy ]; then
+      cd /usr/src/haproxy-2.0.15/haproxy-2.0.15
+      make clean
+      make -j 2 TARGET=linux-glibc USE_OPENSSL=1 USE_ZLIB=1 USE_LUA=1 USE_PCRE=1 USE_SYSTEMD=1 LUA_LIB_NAME=lua
+      make install
+      mv haproxy /usr/sbin/haproxy
+    fi
+
+- name: Creating haproxy directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: haproxy
+    group: haproxy
+  loop:
+    - /etc/haproxy
+    - /var/run/haproxy
+    - /var/empty/haproxy 
+
+- name: Creating /var/lib/haproxy (SELinux issue requires priv ownership for stat file)
+  file:
+    path: /var/lib/haproxy
+    state: directory
+
+- name: Setting SELinux contexts
+  sefcontext:
+    target: "{{ item.target }}"
+    setype: "{{ item.setype }}"
+    state: present
+  loop:
+    - { target: '/usr/sbin/haproxy' , setype: 'haproxy_exec_t' }
+    - { target: '/var/lib/haproxy(/.*)?', setype: 'haproxy_var_lib_t' }
+    - { target: '/var/run/haproxy(/.*)?', setype: 'haproxy_var_run_t' }
+
+- name: Apply new SELinux file context to filesystem
+  command: "{{ item }}"
+  loop:
+    - restorecon -irv /usr/sbin/haproxy
+    - restorecon -irv /var/lib/haproxy
+    - restorecon -irv /var/run/haproxy

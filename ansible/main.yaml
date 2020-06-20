@@ -1,0 +1,9 @@
+- name: Provision haproxy server
+  hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: no
+  roles:
+    - 01_install_packages
+    - 02_compile_haproxy
+    - 03_config_haproxy
